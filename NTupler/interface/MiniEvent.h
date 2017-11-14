@@ -45,6 +45,8 @@ struct MiniEvent_t
   Int_t lp_g[50], tp_g[50];
   Float_t lp_pt[50], lp_eta[50], lp_phi[50], lp_nrj[50];
   Float_t tp_pt[50], tp_eta[50], tp_phi[50], tp_nrj[50];
+  Float_t lp_pt_multi[50], lp_eta_multi[50], lp_phi_multi[50], lp_nrj_multi[50];
+  Float_t tp_pt_multi[50], tp_eta_multi[50], tp_phi_multi[50], tp_nrj_multi[50];
 
 };
 

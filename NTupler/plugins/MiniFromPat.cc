@@ -578,6 +578,11 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     ev_.lp_eta[ev_.nlp]    = photons->at(i).eta();
     ev_.lp_nrj[ev_.nlp]    = photons->at(i).energy();
     ev_.lp_g[ev_.nlp] = -1;
+    // add multicluster quantities too
+    ev_.lp_pt_multi[ev_.nlp]     = photons->at(i).superCluster()->seed()->energy() / cosh(photons->at(i).superCluster()->seed()->eta());
+    ev_.lp_phi_multi[ev_.nlp]    = photons->at(i).superCluster()->seed()->phi();
+    ev_.lp_eta_multi[ev_.nlp]    = photons->at(i).superCluster()->seed()->eta();
+    ev_.lp_nrj_multi[ev_.nlp]    = photons->at(i).superCluster()->seed()->energy();
     for (int ig = 0; ig < ev_.ngp; ig++) {
       if (reco::deltaR(ev_.gp_eta[ig],ev_.gp_phi[ig],ev_.lp_eta[ev_.nlp],ev_.lp_phi[ev_.nlp]) > 0.4) continue;
       ev_.lp_g[ev_.nlp]    = ig;
@@ -591,6 +596,11 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     ev_.tp_eta[ev_.ntp]    = photons->at(i).eta();
     ev_.tp_nrj[ev_.ntp]    = photons->at(i).energy();
     ev_.tp_g[ev_.ntp] = -1;
+    // add multicluster quantities too
+    ev_.tp_pt_multi[ev_.ntp]     = photons->at(i).superCluster()->seed()->energy() / cosh(photons->at(i).superCluster()->seed()->eta());
+    ev_.tp_phi_multi[ev_.ntp]    = photons->at(i).superCluster()->seed()->phi();
+    ev_.tp_eta_multi[ev_.ntp]    = photons->at(i).superCluster()->seed()->eta();
+    ev_.tp_nrj_multi[ev_.ntp]    = photons->at(i).superCluster()->seed()->energy();
     for (int ig = 0; ig < ev_.ngp; ig++) {
       if (reco::deltaR(ev_.gp_eta[ig],ev_.gp_phi[ig],ev_.tp_eta[ev_.ntp],ev_.tp_phi[ev_.ntp]) > 0.4) continue;
       ev_.tp_g[ev_.ntp]    = ig;
