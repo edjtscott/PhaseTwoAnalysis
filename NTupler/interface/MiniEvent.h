@@ -24,7 +24,7 @@ struct MiniEvent_t
   Float_t gl_p[50], gl_px[50], gl_py[50], gl_pz[50], gl_nrj[50], gl_pt[50], gl_eta[50], gl_phi[50], gl_mass[50], gl_relIso[50];
   Int_t gl_pid[50], gl_ch[50], gl_st[50];
   Float_t gj_pt[200], gj_eta[200], gj_phi[200], gj_mass[200];
-  Float_t gp_p[50], gp_px[50], gp_py[50], gp_pz[50], gp_nrj[50], gp_pt[50], gp_eta[50], gp_phi[50];
+  Float_t gp_p[50], gp_px[50], gp_py[50], gp_pz[50], gp_nrj[50], gp_pt[50], gp_eta[50], gp_phi[50], gp_vtxz[50];
   Int_t gp_st[50];
 
   //reco level event

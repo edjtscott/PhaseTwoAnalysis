@@ -325,6 +325,7 @@ MiniFromPat::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup
     ev_.gp_pt[ev_.ngp]     = genParts->at(i).pt();
     ev_.gp_phi[ev_.ngp]    = genParts->at(i).phi();
     ev_.gp_eta[ev_.ngp]    = genParts->at(i).eta();
+    ev_.gp_vtxz[ev_.ngp]   = genParts->at(i).vertex().z();
     ev_.ngp++;
   }
 }
