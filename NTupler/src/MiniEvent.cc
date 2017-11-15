@@ -93,6 +93,25 @@ void createMiniEventTree(TTree *t_event_, TTree *t_genParts_, TTree *t_vertices_
   t_puppiJets_->Branch("PartonFlavor",  ev.j_flav,      "PartonFlavor[JetPUPPI_size]/I");
   t_puppiJets_->Branch("HadronFlavor",  ev.j_hadflav,   "HadronFlavor[JetPUPPI_size]/I");
   t_puppiJets_->Branch("GenPartonPID",  ev.j_pid,       "GenPartonPID[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("chargedSumConst", ev.j_chargedSumConst, "chargedSumConst[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("neutralSumConst", ev.j_neutralSumConst, "neutralSumConst[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("hfemSumConst", ev.j_hfemSumConst, "hfemSumConst[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("hfhadSumConst", ev.j_hfhadSumConst, "hfhadSumConst[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("chargedNConst", ev.j_chargedNConst, "chargedNConst[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("neutralNConst", ev.j_neutralNConst, "neutralNConst[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("hfemNConst", ev.j_hfemNConst, "hfemNConst[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("hfhadNConst", ev.j_hfhadNConst, "hfhadNConst[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("eSumConst", ev.j_eSumConst, "eSumConst[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("eNConst", ev.j_eNConst, "eNConst[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("muSumConst", ev.j_muSumConst, "muSumConst[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("muNConst", ev.j_muNConst, "muNConst[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("photonSumConst", ev.j_photonSumConst, "photonSumConst[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("photonNConst", ev.j_photonNConst, "photonNConst[JetPUPPI_size]/I");
+  t_puppiJets_->Branch("RMSCand", ev.j_RMSCand, "RMSCand[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("Axis1", ev.j_Axis1, "Axis1[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("Axis2", ev.j_Axis2, "Axis2[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("Sigma", ev.j_Sigma, "Sigma[JetPUPPI_size]/F");
+  t_puppiJets_->Branch("ptD", ev.j_ptD, "ptD[JetPUPPI_size]/F");
 
   t_puppiMET_->Branch("PuppiMissingET_size", &ev.nmet,  "PuppiMissingET_size/I");
   t_puppiMET_->Branch("MET",            ev.met_pt,      "MET[PuppiMissingET_size]/F");

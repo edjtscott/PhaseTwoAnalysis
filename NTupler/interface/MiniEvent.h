@@ -41,6 +41,28 @@ struct MiniEvent_t
   Float_t tm_pt[50], tm_eta[50], tm_phi[50], tm_mass[50], tm_relIso[50];
   Int_t j_id[200], j_g[200], j_mvav2[200], j_deepcsv[200], j_flav[200], j_hadflav[200], j_pid[200];
   Float_t j_pt[200], j_eta[200], j_phi[200], j_mass[200];
+
+  Float_t j_chargedSumConst[200];
+  Float_t j_neutralSumConst[200];
+  Float_t j_hfemSumConst[200];
+  Float_t j_hfhadSumConst[200];
+  Int_t j_chargedNConst[200];
+  Int_t j_neutralNConst[200];
+  Int_t j_hfemNConst[200];
+  Int_t j_hfhadNConst[200];
+  Float_t j_eSumConst[200];
+  Int_t j_eNConst[200];
+  Float_t j_muSumConst[200];
+  Int_t j_muNConst[200];
+  Float_t j_photonSumConst[200];
+  Int_t j_photonNConst[200];
+  Float_t j_RMSCand[200];
+  Float_t j_Axis1[200];
+  Float_t j_Axis2[200];
+  Float_t j_Sigma[200];
+  Float_t j_ptD[200];
+
+
   Float_t met_pt[10], met_eta[10], met_phi[10];
   Int_t lp_g[50], tp_g[50];
   Float_t lp_pt[50], lp_eta[50], lp_phi[50], lp_nrj[50];
