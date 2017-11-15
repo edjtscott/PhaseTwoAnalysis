@@ -483,6 +483,132 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (jets->at(i).pt() < 20.) continue;
     if (fabs(jets->at(i).eta()) > 5) continue;
 
+    //    std::cout << "SCZ DEBUG JET " << i << " pt=" << jets->at(i).pt() << " eta=" << jets->at(i).eta() << std::endl;
+
+    float sumCandPt = 0.;
+    float sumCandPtSq = 0;
+    float rmscand_n = 0.;
+    float rmscand_d = 0.;
+    float M11 = 0.;
+    float M12 = 0.;
+    float M21 = 0.;
+    float M22 = 0.;
+    float tot_wt = 0.;
+
+    ev_.j_chargedSumConst[ev_.nj] = 0.;
+    ev_.j_neutralSumConst[ev_.nj] = 0.;
+    ev_.j_hfemSumConst[ev_.nj] = 0.;
+    ev_.j_hfhadSumConst[ev_.nj] = 0.;
+    ev_.j_chargedNConst[ev_.nj] = 0;
+    ev_.j_neutralNConst[ev_.nj] = 0;
+    ev_.j_hfemNConst[ev_.nj] = 0;
+    ev_.j_hfhadNConst[ev_.nj]= 0;
+    ev_.j_eSumConst[ev_.nj] = 0.;
+    ev_.j_eNConst[ev_.nj] = 0;
+    ev_.j_muSumConst[ev_.nj] = 0.;
+    ev_.j_muNConst[ev_.nj] = 0;
+    ev_.j_photonSumConst[ev_.nj] = 0.;
+    ev_.j_photonNConst[ev_.nj] = 0;
+
+    for ( unsigned k = 0; k < jets->at(i).numberOfSourceCandidatePtrs(); ++k ) {
+      reco::CandidatePtr pfJetConstituent = jets->at(i).sourceCandidatePtr(k);
+                    
+      const reco::Candidate* kcand = pfJetConstituent.get();
+      const pat::PackedCandidate* lPack = dynamic_cast<const pat::PackedCandidate *>( kcand );
+      if ( !lPack ) throw cms::Exception( "NoPackedConstituent" ) << " For jet " << i << " failed to get constituent " << k << std::endl;
+      float candPt = kcand->pt();
+      float candDr   = reco::deltaR(*kcand,jets->at(i));
+
+      sumCandPt += candPt;
+      sumCandPtSq += candPt*candPt;
+
+      float wt = pow(kcand->pt(),2);
+      tot_wt += wt;
+          
+      //! RMSCand
+      float deta = kcand->eta()- jets->at(i).eta();
+      float dphi = deltaPhi(kcand->phi(), jets->at(i).phi());
+      float dr = deltaR(kcand->eta(), kcand->phi(), jets->at(i).eta(),  jets->at(i).phi());
+      rmscand_n += wt*dr*dr;
+      rmscand_d += wt; 
+          
+      M11 += wt*deta*deta;
+      M22 += wt*dphi*dphi;
+      M12 += wt*deta*dphi;
+      M21 += wt*deta*dphi;
+
+      //      std::cout << "  SCZ DEBUG CONSTITUENT" << k << " " << candPt << " "  << candDr << std::endl;
+
+      int pfid2     = kcand->pdgId();
+
+      switch(std::abs(pfid2)){
+      case 211:  //PFCandidate::h charged hadron
+      case 321:
+      case 2212:
+	ev_.j_chargedSumConst[ev_.nj] += kcand->pt();
+	ev_.j_chargedNConst[ev_.nj]++;
+	break;
+      case 11:  //PFCandidate::e // electron
+	ev_.j_eSumConst[ev_.nj] += kcand->pt();
+	ev_.j_eNConst[ev_.nj]++;
+	break;
+      case 13: //PFCandidate::mu // muon
+	ev_.j_muSumConst[ev_.nj] += kcand->pt();
+	ev_.j_muNConst[ev_.nj]++;
+	break;
+      case 22: //PFCandidate:gamma // gamma
+	ev_.j_photonSumConst[ev_.nj] += kcand->pt();
+	ev_.j_photonNConst[ev_.nj]++;
+	break;
+      case 130:  //PFCandidate::h0 //Neutral hadron
+      case 2112:
+	ev_.j_neutralSumConst[ev_.nj] += kcand->pt();
+	ev_.j_neutralNConst[ev_.nj]++;
+	break;
+      case 1:  //PFCandidate::h_HF //hadron in HF
+	ev_.j_hfhadSumConst[ev_.nj] += kcand->pt(); 
+	ev_.j_hfhadNConst[ev_.nj]++;
+	break;
+      case 2:  //PFCandidate::egamma_HF //electromagnetic in HF
+	ev_.j_hfemSumConst[ev_.nj] += kcand->pt(); 
+	ev_.j_hfemNConst[ev_.nj]++;
+	break;
+      default:
+	std::cout << "   SCZ DEBUG UNEXPECTED PF ID " << pfid2 << std::endl;
+	break;
+      }
+
+    }
+
+    ev_.j_RMSCand[ev_.nj] = (rmscand_d > 0 ) ? sqrt ( rmscand_n / rmscand_d ) : -999;
+      
+    M12 = -1.*M12;
+    M21 = -1.*M21;
+      
+    //! eign values
+    float trace = M11 + M22;
+    float detrm = (M11*M22) - (M12*M21);
+      
+    float lam1 = trace/2. + sqrt( pow(trace,2)/4. - detrm );
+    float lam2 = trace/2. - sqrt( pow(trace,2)/4. - detrm );
+      
+    ev_.j_Axis1[ev_.nj] = (tot_wt > 0 && lam1 >= 0) ? sqrt( lam1 / tot_wt ) : -999;
+    ev_.j_Axis2[ev_.nj] = (tot_wt > 0 && lam2 >=0 ) ? sqrt( lam2 / tot_wt ) : -999;
+  
+    ev_.j_Sigma[ev_.nj] = (tot_wt > 0 ) ? sqrt( pow(ev_.j_Axis1[ev_.nj],2) + pow(ev_.j_Axis2[ev_.nj],2) ) : -999;
+      
+    ev_.j_ptD[ev_.nj] = (sumCandPt > 0.) ? std::sqrt(sumCandPtSq)/sumCandPt : -999.;
+    
+    
+    //    std::cout << " SCZ DEBUG JET " << i << " ptD=" << ev_.j_ptD[ev_.nj] << " RMS=" << ev_.j_RMSCand[ev_.nj] << " Axis1=" << ev_.j_Axis1[ev_.nj] << " Axis2=" << ev_.j_Axis2[ev_.nj] << std::endl;
+    //    std::cout << "   SCZ DEBUG chargedSumConst=" << ev_.j_chargedSumConst[ev_.nj] << " neutralSumConst=" << ev_.j_neutralSumConst[ev_.nj]
+    //	      << " hfemSumConst=" << ev_.j_hfemSumConst[ev_.nj] << " hfhadSumConst=" << ev_.j_hfhadSumConst[ev_.nj] << std::endl;
+    //    std::cout << "   SCZ DEBUG eSumConst=" << ev_.j_eSumConst[ev_.nj] << " muSumConst=" << ev_.j_muSumConst[ev_.nj] << " photonSumConst=" << ev_.j_photonSumConst[ev_.nj] << std::endl;
+    //    std::cout << "   SCZ DEBUG chargedNConst=" << ev_.j_chargedNConst[ev_.nj] << " neutralNConst=" << ev_.j_neutralNConst[ev_.nj]
+    //              << " hfemNConst=" << ev_.j_hfemNConst[ev_.nj] << " hfhadNConst=" << ev_.j_hfhadNConst[ev_.nj] << std::endl;
+    //    std::cout << "   SCZ DEBUG eNConst=" << ev_.j_eNConst[ev_.nj] << " muNConst=" << ev_.j_muNConst[ev_.nj] << " photonNConst=" << ev_.j_photonNConst[ev_.nj] << std::endl;
+
+
     bool overlaps = false;
     for (size_t j = 0; j < elecs->size(); j++) {
       if (fabs(jets->at(i).pt()-elecs->at(j).pt()) < 0.01*elecs->at(j).pt() && ROOT::Math::VectorUtil::DeltaR(elecs->at(j).p4(),jets->at(i).p4()) < 0.01) {
@@ -497,6 +623,9 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
         break;
       }
     }
+
+    //    std::cout << " SCZ DEBUG OVERLAPS=" << overlaps << std::endl;
+
     if (overlaps) continue;
 
     pat::strbitset retLoose = jetIDLoose_.getBitTemplate();
@@ -532,6 +661,9 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
       ev_.j_g[ev_.nj]     = ig;
       break;
     }	
+
+    std::cout << " SCZ DEBUG isLoose=" << isLoose << " isTight=" << isTight << " flav=" << ev_.j_flav[ev_.nj] << " j_pid=" << ev_.j_pid[ev_.nj] << std::endl;
+
     ev_.nj++;
 
   }
