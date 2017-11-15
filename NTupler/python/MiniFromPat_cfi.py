@@ -11,5 +11,6 @@ ntuple = cms.EDAnalyzer('MiniFromPat',
         jets          = cms.InputTag("slimmedJetsPuppi"),
         mets          = cms.InputTag("slimmedMETsPuppi"),
         genParts      = cms.InputTag("packedGenParticles"),
+        genVertices   = cms.InputTag("genParticles", "xyz0", "HLT"),
         genJets       = cms.InputTag("slimmedGenJets"),
 )
