@@ -139,6 +139,7 @@ class MiniFromPat : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::
     edm::EDGetTokenT<std::vector<pat::MET>> metsToken_;
     edm::EDGetTokenT<std::vector<reco::GenJet>> genJetsToken_;
     edm::EDGetTokenT<std::vector<pat::PackedGenParticle>> genPartsToken_;
+    edm::EDGetTokenT<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag>> genVerticesToken_;
     edm::EDGetTokenT<std::vector<pat::Photon>> photonsToken_;
     const ME0Geometry* ME0Geometry_; 
     double mvaThres_[3];
@@ -173,6 +174,7 @@ MiniFromPat::MiniFromPat(const edm::ParameterSet& iConfig):
   metsToken_(consumes<std::vector<pat::MET>>(iConfig.getParameter<edm::InputTag>("mets"))),
   genJetsToken_(consumes<std::vector<reco::GenJet>>(iConfig.getParameter<edm::InputTag>("genJets"))),
   genPartsToken_(consumes<std::vector<pat::PackedGenParticle>>(iConfig.getParameter<edm::InputTag>("genParts"))),
+  genVerticesToken_(consumes<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag>>(iConfig.getParameter<edm::InputTag>("genVertices"))),
   photonsToken_(consumes<std::vector<pat::Photon>>(iConfig.getParameter<edm::InputTag>("photons")))
 {
   //now do what ever initialization is needed
@@ -248,6 +250,9 @@ MiniFromPat::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup
   Handle<std::vector<pat::PackedGenParticle>> genParts;
   iEvent.getByToken(genPartsToken_, genParts);
 
+  Handle<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag>> genVertices;
+  iEvent.getByToken(genVerticesToken_, genVertices);
+
   Handle<std::vector<reco::GenJet>> genJets;
   iEvent.getByToken(genJetsToken_, genJets);
 
@@ -309,6 +314,10 @@ MiniFromPat::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup
     ev_.ngl++;
   }
 
+  // Vertex
+  float vtxZ = genVertices->z();
+  std::cout << "vertex z is s = " << genVertices->z() << std::endl;
+
   // Photons
   ev_.ngp = 0;
   for (size_t i = 0; i < genParts->size(); i++) {
@@ -325,7 +334,7 @@ MiniFromPat::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup
     ev_.gp_pt[ev_.ngp]     = genParts->at(i).pt();
     ev_.gp_phi[ev_.ngp]    = genParts->at(i).phi();
     ev_.gp_eta[ev_.ngp]    = genParts->at(i).eta();
-    ev_.gp_vtxz[ev_.ngp]   = genParts->at(i).vertex().z();
+    ev_.gp_vtxz[ev_.ngp]   = vtxZ;
     ev_.ngp++;
   }
 }
