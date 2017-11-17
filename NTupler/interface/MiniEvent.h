@@ -21,15 +21,16 @@ struct MiniEvent_t
 
   //gen level event
   Int_t ng,ngj,ngl,ngp;
+  Float_t gv_z;
   Float_t gl_p[50], gl_px[50], gl_py[50], gl_pz[50], gl_nrj[50], gl_pt[50], gl_eta[50], gl_phi[50], gl_mass[50], gl_relIso[50];
   Int_t gl_pid[50], gl_ch[50], gl_st[50];
   Float_t gj_pt[200], gj_eta[200], gj_phi[200], gj_mass[200];
-  Float_t gp_p[50], gp_px[50], gp_py[50], gp_pz[50], gp_nrj[50], gp_pt[50], gp_eta[50], gp_phi[50], gp_vtxz[50];
+  Float_t gp_p[50], gp_px[50], gp_py[50], gp_pz[50], gp_nrj[50], gp_pt[50], gp_eta[50], gp_phi[50];
   Int_t gp_st[50];
 
   //reco level event
   Int_t nvtx;
-  Float_t v_pt2[200];
+  Float_t v_pt2[200], v_z[200];
   Int_t nle, nte, nlm, ntm, nj, nmet, nlp, ntp;
   Int_t le_ch[50], le_g[50];
   Float_t le_pt[50], le_eta[50], le_phi[50], le_mass[50], le_relIso[50];
@@ -64,14 +65,14 @@ struct MiniEvent_t
 
 
   Float_t met_pt[10], met_eta[10], met_phi[10];
-  Int_t lp_g[50], tp_g[50];
+  Int_t lp_g[50], lp_isEB[50], tp_g[50], tp_isEB[50];
   Float_t lp_pt[50], lp_eta[50], lp_phi[50], lp_nrj[50];
   Float_t tp_pt[50], tp_eta[50], tp_phi[50], tp_nrj[50];
-  Float_t lp_pt_multi[50], lp_eta_multi[50], lp_phi_multi[50], lp_nrj_multi[50];
-  Float_t tp_pt_multi[50], tp_eta_multi[50], tp_phi_multi[50], tp_nrj_multi[50];
+  Float_t lp_pt_multi[50], lp_eta_multi[50], lp_z_multi[50], lp_phi_multi[50], lp_nrj_multi[50];
+  Float_t tp_pt_multi[50], tp_eta_multi[50], tp_z_multi[50], tp_phi_multi[50], tp_nrj_multi[50];
 
 };
 
-void createMiniEventTree(TTree *t_event_, TTree *t_genParts_, TTree *t_vertices_, TTree *t_genJets_, TTree *t_genPhotons_, TTree *t_looseElecs_, TTree *t_tightElecs_, TTree *t_looseMuons_, TTree *t_tightMuons_, TTree *t_puppiJets_, TTree *t_puppiMET_, TTree *t_loosePhotons_, TTree *t_tightPhotons_, MiniEvent_t &ev);
+void createMiniEventTree(TTree *t_event_, TTree *t_genParts_, TTree *t_genVertices_, TTree *t_vertices_, TTree *t_genJets_, TTree *t_genPhotons_, TTree *t_looseElecs_, TTree *t_tightElecs_, TTree *t_looseMuons_, TTree *t_tightMuons_, TTree *t_puppiJets_, TTree *t_puppiMET_, TTree *t_loosePhotons_, TTree *t_tightPhotons_, MiniEvent_t &ev);
 
 #endif
