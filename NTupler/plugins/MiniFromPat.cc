@@ -493,7 +493,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (jets->at(i).pt() < 20.) continue;
     if (fabs(jets->at(i).eta()) > 5) continue;
 
-    //    std::cout << "SCZ DEBUG JET " << i << " pt=" << jets->at(i).pt() << " eta=" << jets->at(i).eta() << std::endl;
+    //    std::cout << "SCZ DEBUG JET " << i << " pt=" << jets->at(i).pt() << " eta=" << jets->at(i).eta() << " currentJECLevel=" << jets->at(i).currentJECLevel() << std::endl;
 
     float sumCandPt = 0.;
     float sumCandPtSq = 0;
@@ -505,20 +505,27 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     float M22 = 0.;
     float tot_wt = 0.;
 
-    ev_.j_chargedSumConst[ev_.nj] = 0.;
-    ev_.j_neutralSumConst[ev_.nj] = 0.;
-    ev_.j_hfemSumConst[ev_.nj] = 0.;
-    ev_.j_hfhadSumConst[ev_.nj] = 0.;
+    ev_.j_chargedSumPtConst[ev_.nj] = 0.;
+    ev_.j_neutralSumPtConst[ev_.nj] = 0.;
+    ev_.j_hfemSumPtConst[ev_.nj] = 0.;
+    ev_.j_hfhadSumPtConst[ev_.nj] = 0.;
     ev_.j_chargedNConst[ev_.nj] = 0;
     ev_.j_neutralNConst[ev_.nj] = 0;
     ev_.j_hfemNConst[ev_.nj] = 0;
     ev_.j_hfhadNConst[ev_.nj]= 0;
-    ev_.j_eSumConst[ev_.nj] = 0.;
+    ev_.j_eSumPtConst[ev_.nj] = 0.;
     ev_.j_eNConst[ev_.nj] = 0;
-    ev_.j_muSumConst[ev_.nj] = 0.;
+    ev_.j_muSumPtConst[ev_.nj] = 0.;
     ev_.j_muNConst[ev_.nj] = 0;
-    ev_.j_photonSumConst[ev_.nj] = 0.;
+    ev_.j_photonSumPtConst[ev_.nj] = 0.;
     ev_.j_photonNConst[ev_.nj] = 0;
+    ev_.j_chargedSumPuppiWConst[ev_.nj] = 0.;
+    ev_.j_neutralSumPuppiWConst[ev_.nj] = 0.;
+    ev_.j_hfemSumPuppiWConst[ev_.nj] = 0.;
+    ev_.j_hfhadSumPuppiWConst[ev_.nj] = 0.;
+    ev_.j_eSumPuppiWConst[ev_.nj] = 0.;
+    ev_.j_muSumPuppiWConst[ev_.nj] = 0.;
+    ev_.j_photonSumPuppiWConst[ev_.nj] = 0.;
 
     for ( unsigned k = 0; k < jets->at(i).numberOfSourceCandidatePtrs(); ++k ) {
       reco::CandidatePtr pfJetConstituent = jets->at(i).sourceCandidatePtr(k);
@@ -547,7 +554,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
       M12 += wt*deta*dphi;
       M21 += wt*deta*dphi;
 
-      //      std::cout << "  SCZ DEBUG CONSTITUENT" << k << " " << candPt << " "  << candDr << std::endl;
+      //      std::cout << "  SCZ DEBUG CONSTITUENT" << k << " " << candPt << " "  << candDr << " puppiWeight=" << lPack->puppiWeight() << std::endl;
 
       int pfid2     = kcand->pdgId();
 
@@ -555,32 +562,39 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
       case 211:  //PFCandidate::h charged hadron
       case 321:
       case 2212:
-	ev_.j_chargedSumConst[ev_.nj] += kcand->pt();
+        ev_.j_chargedSumPtConst[ev_.nj] += kcand->pt();
+	ev_.j_chargedSumPuppiWConst[ev_.nj] += lPack->puppiWeight();
 	ev_.j_chargedNConst[ev_.nj]++;
 	break;
       case 11:  //PFCandidate::e // electron
-	ev_.j_eSumConst[ev_.nj] += kcand->pt();
+        ev_.j_eSumPtConst[ev_.nj] += kcand->pt();
+	ev_.j_eSumPuppiWConst[ev_.nj] += lPack->puppiWeight();
 	ev_.j_eNConst[ev_.nj]++;
 	break;
       case 13: //PFCandidate::mu // muon
-	ev_.j_muSumConst[ev_.nj] += kcand->pt();
+        ev_.j_muSumPtConst[ev_.nj] += kcand->pt();
+	ev_.j_muSumPuppiWConst[ev_.nj] += lPack->puppiWeight();
 	ev_.j_muNConst[ev_.nj]++;
 	break;
       case 22: //PFCandidate:gamma // gamma
-	ev_.j_photonSumConst[ev_.nj] += kcand->pt();
+        ev_.j_photonSumPtConst[ev_.nj] += kcand->pt();
+	ev_.j_photonSumPuppiWConst[ev_.nj] += lPack->puppiWeight();
 	ev_.j_photonNConst[ev_.nj]++;
 	break;
       case 130:  //PFCandidate::h0 //Neutral hadron
       case 2112:
-	ev_.j_neutralSumConst[ev_.nj] += kcand->pt();
+        ev_.j_neutralSumPtConst[ev_.nj] += kcand->pt();
+	ev_.j_neutralSumPuppiWConst[ev_.nj] += lPack->puppiWeight();
 	ev_.j_neutralNConst[ev_.nj]++;
 	break;
       case 1:  //PFCandidate::h_HF //hadron in HF
-	ev_.j_hfhadSumConst[ev_.nj] += kcand->pt(); 
+        ev_.j_hfhadSumPtConst[ev_.nj] += kcand->pt();
+	ev_.j_hfhadSumPuppiWConst[ev_.nj] += lPack->puppiWeight(); 
 	ev_.j_hfhadNConst[ev_.nj]++;
 	break;
       case 2:  //PFCandidate::egamma_HF //electromagnetic in HF
-	ev_.j_hfemSumConst[ev_.nj] += kcand->pt(); 
+        ev_.j_hfemSumPtConst[ev_.nj] += kcand->pt();
+	ev_.j_hfemSumPuppiWConst[ev_.nj] += lPack->puppiWeight(); 
 	ev_.j_hfemNConst[ev_.nj]++;
 	break;
       default:
@@ -672,7 +686,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
       break;
     }	
 
-    std::cout << " SCZ DEBUG isLoose=" << isLoose << " isTight=" << isTight << " flav=" << ev_.j_flav[ev_.nj] << " j_pid=" << ev_.j_pid[ev_.nj] << std::endl;
+    //    std::cout << " SCZ DEBUG isLoose=" << isLoose << " isTight=" << isTight << " flav=" << ev_.j_flav[ev_.nj] << " j_pid=" << ev_.j_pid[ev_.nj] << std::endl;
 
     ev_.nj++;
 
