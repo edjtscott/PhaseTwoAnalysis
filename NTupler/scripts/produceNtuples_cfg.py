@@ -22,7 +22,10 @@ options.register('updateJEC', '',
                  VarParsing.varType.string,
                  "Name of the SQLite file (with path and extension) used to update the jet collection to the latest JEC and the era of the new JEC"
                 )
+options.setDefault('updateJEC',["PhaseIIFall17_V3_MC.db","PhaseIIFall17_V3_MC"])
 options.parseArguments()
+
+print options.updateJEC
 
 process = cms.Process("MiniAnalysis")
 
