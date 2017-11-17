@@ -16,10 +16,10 @@ def main():
   initHistByEta(etaHists, 'mggPtCutsTightID', 40, 115, 135)
   initHistByEta(etaHists, 'mggPtCutsTightIDMulti', 40, 115, 135)
   
-  PUname = 'PU0'
-  #PUname = 'PU200'
-  fileName = 'FullTest_VBF_%s.root'%PUname
-  webDir = '/afs/cern.ch/user/e/escott/www/FinalFits/HFuture/Pass1/VBF_%s'%PUname
+  #PUname = 'PU0'
+  PUname = 'PU200_v2'
+  fileName = 'new_VBF_%s.root'%PUname
+  webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1/VBF_%s'%PUname
   
   theFile = r.TFile(fileName)
   print 'got file %s'%fileName
@@ -33,6 +33,9 @@ def main():
     if not nPhotons==2: 
       continue
     #setup collections
+    #gen and reco vertex z
+    #genVtxZ  = getattr(ev,'')
+    #recoVtxZ = getattr(ev,'')
     #default pat quantities
     photonPt  = getattr(ev,'PT')
     photonE   = getattr(ev,'E')
@@ -75,6 +78,7 @@ def main():
   os.system('mkdir -p %s'%outdirName)
   printHists(canv, etaHists, outdirName)
   os.system('cp %s* %s'%(outdirName,webDir))
+  print 'plots moved to %s'%webDir
 
 
 if __name__ == '__main__':

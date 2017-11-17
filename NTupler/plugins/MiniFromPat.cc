@@ -145,7 +145,7 @@ class MiniFromPat : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::
     double mvaThres_[3];
     double deepThres_[3];
 
-    TTree *t_event_, *t_genParts_, *t_vertices_, *t_genJets_, *t_genPhotons_, *t_looseElecs_, *t_tightElecs_, *t_looseMuons_, *t_tightMuons_, *t_puppiJets_, *t_puppiMET_, *t_loosePhotons_, *t_tightPhotons_;
+    TTree *t_event_, *t_genParts_, *t_genVertices_, *t_vertices_, *t_genJets_, *t_genPhotons_, *t_looseElecs_, *t_tightElecs_, *t_looseMuons_, *t_tightMuons_, *t_puppiJets_, *t_puppiMET_, *t_loosePhotons_, *t_tightPhotons_;
 
     MiniEvent_t ev_;
 };
@@ -213,6 +213,7 @@ MiniFromPat::MiniFromPat(const edm::ParameterSet& iConfig):
   t_event_      = fs_->make<TTree>("Event","Event");
   t_genParts_   = fs_->make<TTree>("Particle","Particle");
   t_genPhotons_ = fs_->make<TTree>("GenPhoton","GenPhoton"); 
+  t_genVertices_ = fs_->make<TTree>("GenVertex","GenVertex");
   t_vertices_   = fs_->make<TTree>("Vertex","Vertex");
   t_genJets_    = fs_->make<TTree>("GenJet","GenJet");
   t_looseElecs_ = fs_->make<TTree>("ElectronLoose","ElectronLoose");
@@ -223,7 +224,7 @@ MiniFromPat::MiniFromPat(const edm::ParameterSet& iConfig):
   t_puppiMET_   = fs_->make<TTree>("PuppiMissingET","PuppiMissingET");
   t_loosePhotons_ = fs_->make<TTree>("PhotonLoose","PhotonLoose");
   t_tightPhotons_ = fs_->make<TTree>("PhotonTight","PhotonTight");
-  createMiniEventTree(t_event_, t_genParts_, t_vertices_, t_genJets_, t_genPhotons_, t_looseElecs_, t_tightElecs_, t_looseMuons_, t_tightMuons_, t_puppiJets_, t_puppiMET_, t_loosePhotons_, t_tightPhotons_, ev_);
+  createMiniEventTree(t_event_, t_genParts_, t_genVertices_, t_vertices_, t_genJets_, t_genPhotons_, t_looseElecs_, t_tightElecs_, t_looseMuons_, t_tightMuons_, t_puppiJets_, t_puppiMET_, t_loosePhotons_, t_tightPhotons_, ev_);
 
 }
 
@@ -315,8 +316,8 @@ MiniFromPat::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup
   }
 
   // Vertex
-  float vtxZ = genVertices->z();
-  std::cout << "vertex z is s = " << genVertices->z() << std::endl;
+  ev_.gv_z = genVertices->z();
+  //std::cout << "vertex z is s = " << genVertices->z() << std::endl;
 
   // Photons
   ev_.ngp = 0;
@@ -334,7 +335,6 @@ MiniFromPat::genAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetup
     ev_.gp_pt[ev_.ngp]     = genParts->at(i).pt();
     ev_.gp_phi[ev_.ngp]    = genParts->at(i).phi();
     ev_.gp_eta[ev_.ngp]    = genParts->at(i).eta();
-    ev_.gp_vtxz[ev_.ngp]   = vtxZ;
     ev_.ngp++;
   }
 }
@@ -376,6 +376,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (vertices->at(i).ndof() <= 4) continue;
     if (prVtx < 0) prVtx = i;
     ev_.v_pt2[ev_.nvtx] = vertices->at(i).p4().pt();
+    ev_.v_z[ev_.nvtx] = vertices->at(i).z();
     ev_.nvtx++;
   }
   if (prVtx < 0) return;
@@ -527,7 +528,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
       const pat::PackedCandidate* lPack = dynamic_cast<const pat::PackedCandidate *>( kcand );
       if ( !lPack ) throw cms::Exception( "NoPackedConstituent" ) << " For jet " << i << " failed to get constituent " << k << std::endl;
       float candPt = kcand->pt();
-      float candDr   = reco::deltaR(*kcand,jets->at(i));
+      //float candDr   = reco::deltaR(*kcand,jets->at(i));
 
       sumCandPt += candPt;
       sumCandPtSq += candPt*candPt;
@@ -724,6 +725,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     ev_.lp_pt_multi[ev_.nlp]     = photons->at(i).superCluster()->seed()->energy() / cosh(photons->at(i).superCluster()->seed()->eta());
     ev_.lp_phi_multi[ev_.nlp]    = photons->at(i).superCluster()->seed()->phi();
     ev_.lp_eta_multi[ev_.nlp]    = photons->at(i).superCluster()->seed()->eta();
+    ev_.lp_z_multi[ev_.nlp]    = photons->at(i).superCluster()->seed()->z();
     ev_.lp_nrj_multi[ev_.nlp]    = photons->at(i).superCluster()->seed()->energy();
     for (int ig = 0; ig < ev_.ngp; ig++) {
       if (reco::deltaR(ev_.gp_eta[ig],ev_.gp_phi[ig],ev_.lp_eta[ev_.nlp],ev_.lp_phi[ev_.nlp]) > 0.4) continue;
@@ -742,6 +744,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     ev_.tp_pt_multi[ev_.ntp]     = photons->at(i).superCluster()->seed()->energy() / cosh(photons->at(i).superCluster()->seed()->eta());
     ev_.tp_phi_multi[ev_.ntp]    = photons->at(i).superCluster()->seed()->phi();
     ev_.tp_eta_multi[ev_.ntp]    = photons->at(i).superCluster()->seed()->eta();
+    ev_.tp_z_multi[ev_.ntp]    = photons->at(i).superCluster()->seed()->z();
     ev_.tp_nrj_multi[ev_.ntp]    = photons->at(i).superCluster()->seed()->energy();
     for (int ig = 0; ig < ev_.ngp; ig++) {
       if (reco::deltaR(ev_.gp_eta[ig],ev_.gp_phi[ig],ev_.tp_eta[ev_.ntp],ev_.tp_phi[ev_.ntp]) > 0.4) continue;
@@ -768,6 +771,7 @@ MiniFromPat::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   t_event_->Fill();
   t_genParts_->Fill();
   t_genPhotons_->Fill();
+  t_genVertices_->Fill();
   t_vertices_->Fill();
   t_genJets_->Fill();
   t_looseElecs_->Fill();

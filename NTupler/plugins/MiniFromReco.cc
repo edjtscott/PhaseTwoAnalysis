@@ -133,7 +133,7 @@ class MiniFromReco : public edm::one::EDAnalyzer<edm::one::SharedResources, edm:
     edm::EDGetTokenT<std::vector<reco::Vertex>> verticesToken_;
     const ME0Geometry* ME0Geometry_; 
 
-    TTree *t_event_, *t_genParts_, *t_vertices_, *t_genJets_, *t_genPhotons_, *t_looseElecs_, *t_tightElecs_, *t_looseMuons_, *t_tightMuons_, *t_loosePhotons_, *t_tightPhotons_, *t_puppiJets_, *t_puppiMET_;
+    TTree *t_event_, *t_genParts_, *t_genVertices_, *t_vertices_, *t_genJets_, *t_genPhotons_, *t_looseElecs_, *t_tightElecs_, *t_looseMuons_, *t_tightMuons_, *t_loosePhotons_, *t_tightPhotons_, *t_puppiJets_, *t_puppiMET_;
     MiniEvent_t ev_;
 
 };
@@ -172,6 +172,7 @@ MiniFromReco::MiniFromReco(const edm::ParameterSet& iConfig):
   t_event_        = fs_->make<TTree>("Event","Event");
   t_genParts_     = fs_->make<TTree>("Particle","Particle");
   t_genPhotons_   = fs_->make<TTree>("GenPhoton","GenPhoton");
+  t_genVertices_     = fs_->make<TTree>("Vertex","Vertex");
   t_vertices_     = fs_->make<TTree>("Vertex","Vertex");
   t_genJets_      = fs_->make<TTree>("GenJet","GenJet");
   t_looseElecs_   = fs_->make<TTree>("ElectronLoose","ElectronLoose");
@@ -182,7 +183,7 @@ MiniFromReco::MiniFromReco(const edm::ParameterSet& iConfig):
   t_puppiMET_     = fs_->make<TTree>("PuppiMissingET","PuppiMissingET");
   t_loosePhotons_ = fs_->make<TTree>("PhotonLoose","PhotonLoose");
   t_loosePhotons_ = fs_->make<TTree>("PhotonTight","PhotonTight");
-  createMiniEventTree(t_event_, t_genParts_, t_vertices_, t_genJets_, t_genPhotons_, t_looseElecs_, t_tightElecs_, t_looseMuons_, t_tightMuons_, t_puppiJets_, t_puppiMET_, t_loosePhotons_, t_tightPhotons_, ev_);
+  createMiniEventTree(t_event_, t_genParts_, t_genVertices_, t_vertices_, t_genJets_, t_genPhotons_, t_looseElecs_, t_tightElecs_, t_looseMuons_, t_tightMuons_, t_puppiJets_, t_puppiMET_, t_loosePhotons_, t_tightPhotons_, ev_);
 }
 
 
@@ -517,6 +518,7 @@ MiniFromReco::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   t_event_->Fill();
   t_genParts_->Fill();
   t_genPhotons_->Fill();
+  t_genVertices_->Fill();
   t_vertices_->Fill();
   t_genJets_->Fill();
   t_looseElecs_->Fill();

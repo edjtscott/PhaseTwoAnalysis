@@ -54,12 +54,9 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(3) )
 
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
-        #'root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17MiniAOD/DiPhotonJetsBox_MGG-80toInf_14TeV-Sherpa/MINIAODSIM/PU200_93X_upgrade2023_realistic_v2-v1/150000/E01EFC0F-13B7-E711-A90B-FA163E4C681C.root'
-        #'root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17MiniAOD/VBFHToGG_M125_14TeV_amcatnlo_pythia8/MINIAODSIM/noPU_93X_upgrade2023_realistic_v2-v1/150000/40333064-FDBB-E711-ADFD-0025905C2CD2.root'
         'root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17MiniAOD/VBFHToGG_M125_14TeV_amcatnlo_pythia8/MINIAODSIM/noPU_93X_upgrade2023_realistic_v2-v1/150000/661130DC-21BC-E711-939D-3417EBE2EE2D.root'
     ),
     secondaryFileNames = cms.untracked.vstring(
-        #'root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17DR/DiPhotonJetsBox_MGG-80toInf_14TeV-Sherpa/GEN-SIM-RECO/PU200_93X_upgrade2023_realistic_v2-v1/150000/24BB7BB2-A9B4-E711-9DC9-FA163E7FFB3C.root')
        'root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17DR/VBFHToGG_M125_14TeV_amcatnlo_pythia8/GEN-SIM-RECO/noPU_93X_upgrade2023_realistic_v2-v1/150000/00C13FEA-40B3-E711-857C-008CFAFBE5E0.root','root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17DR/VBFHToGG_M125_14TeV_amcatnlo_pythia8/GEN-SIM-RECO/noPU_93X_upgrade2023_realistic_v2-v1/150000/D2CB12B4-3FB3-E711-A6DE-3417EBE2F319.root','root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17DR/VBFHToGG_M125_14TeV_amcatnlo_pythia8/GEN-SIM-RECO/noPU_93X_upgrade2023_realistic_v2-v1/150000/E0B60B0C-A5B3-E711-AC36-008CFAF71768.root','root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17DR/VBFHToGG_M125_14TeV_amcatnlo_pythia8/GEN-SIM-RECO/noPU_93X_upgrade2023_realistic_v2-v1/150000/0CA2BC2F-A5B3-E711-9E2B-008CFAFBF576.root','root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRFall17DR/VBFHToGG_M125_14TeV_amcatnlo_pythia8/GEN-SIM-RECO/noPU_93X_upgrade2023_realistic_v2-v1/150000/148522BA-67BB-E711-9D2B-3417EBE64567.root') 
 )
 if (options.inputFormat.lower() == "reco"):
