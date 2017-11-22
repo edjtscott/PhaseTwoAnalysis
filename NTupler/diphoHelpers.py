@@ -28,7 +28,7 @@ def initHistByJetType(histColl, histName, bins=100, low=1., high=0.):
       name =  histName + order + jetName
       histColl[name] = r.TH1F(name,name,bins,low,high)
 
-def fillHistByJetType(histColl, histName, genIndex, order, partonID, val):
+def fillHistByJetType(histColl, histName, genIndex, partonID, order, val):
   if genIndex < 0:
     histColl[histName+'_all_PU'].Fill(val)
     if order==0: histColl[histName+'_lead_PU'].Fill(val)
@@ -45,9 +45,13 @@ def fillHistByJetType(histColl, histName, genIndex, order, partonID, val):
 def drawJetHist(canv, histColl, jetVar, outdir):
   canv.cd() 
   for order in ['_all', '_lead', '_sub']:
+    axisMax = max( [histColl[jetVar+order+'_VBF'].GetMaximum(), histColl[jetVar+order+'_Rad'].GetMaximum(), histColl[jetVar+order+'_PU'].GetMaximum()] )
     histColl[jetVar+order+'_VBF'].SetLineColor(1)
     histColl[jetVar+order+'_Rad'].SetLineColor(2)
     histColl[jetVar+order+'_PU'].SetLineColor(4)
+    histColl[jetVar+order+'_VBF'].SetMaximum(axisMax)
+    histColl[jetVar+order+'_Rad'].SetMaximum(axisMax)
+    histColl[jetVar+order+'_PU'].SetMaximum(axisMax)
     histColl[jetVar+order+'_VBF'].Draw()
     histColl[jetVar+order+'_Rad'].Draw('same')
     histColl[jetVar+order+'_PU'].Draw('same')

@@ -16,16 +16,20 @@ def main():
   #vtx histos
   vtxHists = {}
   vtxHists['choseCorrectVtx'] = r.TH1F('choseCorrectVtx', 'choseCorrectVtx', 2, -0.5, 1.5)
+  vtxHists['choseCorrectVtxVBFPhaseSpace'] = r.TH1F('choseCorrectVtxVBFPhaseSpace', 'choseCorrectVtxVBFPhaseSpace', 2, -0.5, 1.5)
   #histos in VBF phase space, for jet shape comparisons
   jetHists     = {}
   jetVals    = {}
   jetVariables = ['chargedSumPtConst', 'neutralSumPtConst', 'hfemSumPtConst', 'hfhadSumPtConst', 'chargedNConst', 'neutralNConst', 'hfemNConst', 'hfhadNConst', 'eSumPtConst', 'eNConst', 'muSumPtConst', 'muNConst', 'photonSumPtConst', 'photonNConst', 'RMSCand', 'Axis1', 'Axis2', 'Sigma', 'ptD']
+  initHistByJetType(jetHists, 'jetPt')
+  initHistByJetType(jetHists, 'jetEta')
   for jetVar in jetVariables:
     initHistByJetType(jetHists, jetVar)
+    initHistByJetType(jetHists, jetVar+'_limited')
   #the 2D energy correction hist. FIXME: Binning could be changed
   correctionHists = {}
-  correctionHists['photonECorrection'] = r.TH2F('photonECorrection','photonECorrection',6,0.,3.,50,30.,530.)
-  correctionHists['photonECorrectionEntries'] = r.TH2F('photonECorrectionEntries','photonECorrectionEntries',6,0.,3.,50,30.,530.)
+  correctionHists['photonECorrection'] = r.TH2F('photonECorrection','photonECorrection',6,0.,3.,25,30.,530.)
+  correctionHists['photonECorrectionEntries'] = r.TH2F('photonECorrectionEntries','photonECorrectionEntries',6,0.,3.,25,30.,530.)
   correctionHists['photonECorrection'].Sumw2()
   correctionHists['photonECorrectionEntries'].Sumw2()
 
@@ -42,15 +46,15 @@ def main():
   baseNames['ggH_PU200'] = 'eos/cms/store/group/dpg_hgcal/comm_hgcal/escott/ggH_PU200_20Nov17/GluGluHToGG_M125_14TeV_amcatnloFXFX_pythia8/crab_ggHToGG_M125_14TeV_amcatnloFXFX_pythia8--PU200_93X_upgrade2023_realistic_v2-v2_2ndAttempt/171120_121647/0000/MiniEvents_'
   fileVetos = {}
   fileVetos['VBF_PU0']   = []
-  fileVetos['VBF_PU200'] = [20]
+  fileVetos['VBF_PU200'] = []
   fileVetos['ggH_PU0']   = []
   fileVetos['ggH_PU200'] = [3,5] #FIXME these might need updating
 
   #FIXME make configurable
   #theKey = 'VBF_PU0'
   #theKey = 'VBF_PU200'
-  #theKey = 'ggH_PU0'
-  theKey = 'ggH_PU200'
+  theKey = 'ggH_PU0'
+  #theKey = 'ggH_PU200'
   theTree       = r.TChain('ntuple/PhotonTight')
   genPhotonTree = r.TChain('ntuple/GenPhoton')
   genVtxTree    = r.TChain('ntuple/GenVertex')
@@ -161,6 +165,8 @@ def main():
     subleadJetIndex = -1
     subleadJetPt    = -1.
     for iJet in range(nJets):
+      if not jetID[iJet]:
+        continue
       tempPt = jetPt[iJet]
       if tempPt>leadJetPt:
         leadJetPt = jetPt[iJet]
@@ -168,10 +174,14 @@ def main():
     for iJet2 in range(nJets):
       if iJet2 == leadJetIndex:
         continue
+      if not jetID[iJet2]:
+        continue
       tempPt = jetPt[iJet2]
       if tempPt>subleadJetPt:
         subleadJetPt = jetPt[iJet2]
         subleadJetIndex = iJet2
+    if not (leadJetIndex>-1 and subleadJetIndex>-1):
+      continue
     leadJet = r.TLorentzVector()
     leadJet.SetPtEtaPhiM(leadJetPt, jetEta[leadJetIndex], jetPhi[leadJetIndex], jetMass[leadJetIndex])
     subleadJet = r.TLorentzVector()
@@ -183,24 +193,40 @@ def main():
     leadJetGenIndex    = jetGenIndex[leadJetIndex]
     subleadJetGenIndex = jetGenIndex[subleadJetIndex]
     #jetDeta = abs(jetEta[leadJetIndex]l - jetEta[subleadJetIndex]) #FIXME: no dEta cut in flashgg?
+    #then project to VBF phase space
     if not (3*leadPhoton.Pt()>diphoMass and 4*subleadPhoton.Pt()>diphoMass):
-      continue
-    if not (leadJetPt>40. and subleadJetPt>30.):
       continue
     if not (abs(jetEta[leadJetIndex])<4.7 and abs(jetEta[subleadJetIndex])<4.7):
       continue
-    if not dijetMass > 250.:
+    if not (dijetMass > 250.):
       continue
-    if not jetID[leadJetIndex] and jetID[subleadJetIndex]:
+    if not (jetID[leadJetIndex] and jetID[subleadJetIndex]): #FIXME need to investigate jetID
       continue
-    #FIXME: then project to VBF phase space, make jet plots here
-    for jetVar in jetVariables:
-      fillHistByJetType(jetHists, jetVar, leadJetGenIndex,    leadJetGenPID,    0, jetVals[jetVar][leadJetIndex])
-      fillHistByJetType(jetHists, jetVar, subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
+    #make jet, other plots here
+    vtxHists['choseCorrectVtxVBFPhaseSpace'].Fill(correctVtx)
     fillHistByEta(etaHists, 'mggVBFPhaseSpace', leadPhoton.Eta(), subleadPhoton.Eta(), diphoMass)
+    fillHistByJetType(jetHists, 'jetPt', leadJetGenIndex, leadJetGenPID, 0, leadJet.Pt())
+    fillHistByJetType(jetHists, 'jetPt', subleadJetGenIndex, subleadJetGenPID, 1, subleadJet.Pt())
+    fillHistByJetType(jetHists, 'jetEta', leadJetGenIndex, leadJetGenPID, 0, leadJet.Eta())
+    fillHistByJetType(jetHists, 'jetEta', subleadJetGenIndex, subleadJetGenPID, 1, subleadJet.Eta())
+    for jetVar in jetVariables:
+      if 'Axis' in jetVar:
+        if jetVals[jetVar][leadJetIndex]>-1.: 
+          fillHistByJetType(jetHists, jetVar, leadJetGenIndex,    leadJetGenPID,    0, jetVals[jetVar][leadJetIndex])
+        if jetVals[jetVar][subleadJetIndex]>-1.: 
+          fillHistByJetType(jetHists, jetVar, subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
+      else:
+        fillHistByJetType(jetHists, jetVar, leadJetGenIndex,    leadJetGenPID,    0, jetVals[jetVar][leadJetIndex])
+        fillHistByJetType(jetHists, jetVar, subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
+      if leadJetPt>50. and leadJetPt<100.:
+        fillHistByJetType(jetHists, jetVar+'_limited', leadJetGenIndex,    leadJetGenPID,    0, jetVals[jetVar][leadJetIndex])
+      if subleadJetPt>50. and subleadJetPt<100.:
+        fillHistByJetType(jetHists, jetVar+'_limited', subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
 
   #post-processing
   correctionHists['photonECorrection'].Divide(correctionHists['photonECorrectionEntries'])
+  correctionHists['photonECorrection'].SetMinimum(0.)
+  correctionHists['photonECorrection'].SetMaximum(3.)
 
   #draw hists, send to web
   canv = r.TCanvas('canv','canv')
@@ -210,11 +236,14 @@ def main():
   os.system('mkdir -p %s'%webDir)
   os.system('cp /afs/cern.ch/user/e/escott/www/HFuture/Pass1/index.php %s'%webDir)
   printHists(canv, etaHists, outdirName)
+  printHists(canv, correctionHists, outdirName)
   printHists(canv, vtxHists, outdirName)
   printHists(canv, jetHists, outdirName)
-  printHists(canv, correctionHists, outdirName)
+  drawJetHist(canv, jetHists, 'jetPt', outdirName)
+  drawJetHist(canv, jetHists, 'jetEta', outdirName)
   for jetVar in jetVariables:
     drawJetHist(canv, jetHists, jetVar, outdirName)
+    drawJetHist(canv, jetHists, jetVar+'_limited', outdirName)
   os.system('cp %s* %s'%(outdirName,webDir))
   print 'plots moved to %s'%webDir
   #save the correction hist for combination
