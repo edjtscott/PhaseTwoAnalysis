@@ -2,8 +2,17 @@
 # code to loop over HGCAL photon ntuples and make some plots
 
 import os
+from numpy import sqrt, sin, cos, tan
 import ROOT as r
 from diphoHelpers import initHistByEta, fillHistByEta, getEffSigma, printHists, initHistByJetType, fillHistByJetType, drawJetHist
+
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option('-k', '--key', default='VBF_PU200', help='choose the sample to run on')
+parser.add_option('-l', '--doLoose', default=False, action='store_true', help='use loose photons (default false, ie use only tight photons)')
+parser.add_option('-w', '--writePlots', default=False, action='store_true', help='send plots to web etc')
+parser.add_option('-m', '--maxEvents', type='int', default=-1, help='specify number of events on which to run')
+(opts,args) = parser.parse_args()
 
 r.gROOT.SetBatch(True)
 
@@ -13,10 +22,18 @@ def main():
   initHistByEta(etaHists, 'mggTightID', 40, 115, 135)
   initHistByEta(etaHists, 'mggPtCutsTightID', 40, 115, 135)
   initHistByEta(etaHists, 'mggVBFPhaseSpace', 40, 115, 135)
-  #vtx histos
-  vtxHists = {}
-  vtxHists['choseCorrectVtx'] = r.TH1F('choseCorrectVtx', 'choseCorrectVtx', 2, -0.5, 1.5)
-  vtxHists['choseCorrectVtxVBFPhaseSpace'] = r.TH1F('choseCorrectVtxVBFPhaseSpace', 'choseCorrectVtxVBFPhaseSpace', 2, -0.5, 1.5)
+  #misc histos
+  miscHists = {}
+  miscHists['choseCorrectVtx'] = r.TH1F('choseCorrectVtx', 'choseCorrectVtx', 2, -0.5, 1.5)
+  miscHists['choseCorrectVtxVBFPhaseSpace'] = r.TH1F('choseCorrectVtxVBFPhaseSpace', 'choseCorrectVtxVBFPhaseSpace', 2, -0.5, 1.5)
+  miscHists['cutFlow0_TotEvts'] = r.TH1F('cutFlow0_TotEvts', 'cutFlow0_TotEvts', 1, 0.5, 1.5)
+  miscHists['cutFlow1_GtTwoPhotons'] = r.TH1F('cutFlow1_GtTwoPhotons', 'cutFlow1_GtTwoPhotons', 1, 0.5, 1.5)
+  miscHists['cutFlow1a_RecoVtxExists'] = r.TH1F('cutFlow1a_RecoVtxExists', 'cutFlow1a_RecoVtxExists', 1, 0.5, 1.5)
+  miscHists['cutFlow2_TwoMatchingPhotons'] = r.TH1F('cutFlow2_TwoMatchingPhotons', 'cutFlow2_TwoMatchingPhotons', 1, 0.5, 1.5)
+  miscHists['cutFlow3_ScaledPtCuts'] = r.TH1F('cutFlow3_ScaledPtCuts', 'cutFlow3_ScaledPtCuts', 1, 0.5, 1.5)
+  miscHists['cutFlow4_TwoValidJetsIDd'] = r.TH1F('cutFlow4_TwoValidJetsIDd', 'cutFlow4_TwoValidJetsIDd', 1, 0.5, 1.5)
+  miscHists['cutFlow5_PtCutJets'] = r.TH1F('cutFlow5_PtCutJets', 'cutFlow5_PtCutJets', 1, 0.5, 1.5)
+  miscHists['cutFlow6_DijetMassCut'] = r.TH1F('cutFlow6_DijetMassCut', 'cutFlow6_DijetMassCut', 1, 0.5, 1.5)
   #histos in VBF phase space, for jet shape comparisons
   jetHists     = {}
   jetVals    = {}
@@ -26,7 +43,7 @@ def main():
   for jetVar in jetVariables:
     initHistByJetType(jetHists, jetVar)
     initHistByJetType(jetHists, jetVar+'_limited')
-  #the 2D energy correction hist. FIXME: Binning could be changed
+  #the 2D energy correction hist. FIXME: Binning could be changed, ideally variable
   correctionHists = {}
   correctionHists['photonECorrection'] = r.TH2F('photonECorrection','photonECorrection',6,0.,3.,25,30.,530.)
   correctionHists['photonECorrectionEntries'] = r.TH2F('photonECorrectionEntries','photonECorrectionEntries',6,0.,3.,25,30.,530.)
@@ -51,11 +68,17 @@ def main():
   fileVetos['ggH_PU200'] = [3,5] #FIXME these might need updating
 
   #FIXME make configurable
-  #theKey = 'VBF_PU0'
-  #theKey = 'VBF_PU200'
-  theKey = 'ggH_PU0'
-  #theKey = 'ggH_PU200'
-  theTree       = r.TChain('ntuple/PhotonTight')
+  theKey = opts.key
+  if theKey not in nFiles.keys():
+    raise Exception('invalid key: use one of %s'%(nFiles.keys()))
+  print 'Running on %s events'%theKey
+  if opts.maxEvents>0: print 'Up to a maximum of %g events'%opts.maxEvents
+  print 'Write plots is set to',opts.writePlots
+  doLoose = opts.doLoose
+  if not doLoose: 
+    theTree     = r.TChain('ntuple/PhotonTight')
+  else: 
+    theTree     = r.TChain('ntuple/PhotonLoose')
   genPhotonTree = r.TChain('ntuple/GenPhoton')
   genVtxTree    = r.TChain('ntuple/GenVertex')
   recoVtxTree   = r.TChain('ntuple/Vertex')
@@ -71,13 +94,18 @@ def main():
 
   print 'got trees from files'
   for i,ev in enumerate(theTree):
-    #if i==1000: break #FIXME: just for testing
     if i==0: print 'Processing first event'
     elif i%10000==0: print 'Processing event %g'%i
+    if i==opts.maxEvents: break
+    miscHists['cutFlow0_TotEvts'].Fill(1)
     #check two photons
-    nPhotons = getattr(ev,'PhotonTight_size')
-    if not nPhotons==2: 
+    if not doLoose:
+      nPhotons = getattr(ev,'PhotonTight_size')
+    else:
+      nPhotons = getattr(ev,'PhotonLoose_size')
+    if nPhotons < 2:
       continue
+    miscHists['cutFlow1_GtTwoPhotons'].Fill(1)
     #setup collections
     #gen and reco vertex z
     genVtxTree.GetEntry(i)
@@ -86,9 +114,10 @@ def main():
     recoVtxZ = getattr(recoVtxTree,'Z')
     if len(recoVtxZ) < 1:
       continue
+    miscHists['cutFlow1a_RecoVtxExists'].Fill(1)
     recoVtxZ = recoVtxZ[0]
     correctVtx = abs(genVtxZ-recoVtxZ) < 1.
-    vtxHists['choseCorrectVtx'].Fill(correctVtx)
+    miscHists['choseCorrectVtx'].Fill(correctVtx)
     #get gen photon energies
     genPhotonTree.GetEntry(i)
     genPhotonE = getattr(genPhotonTree,'E')
@@ -106,6 +135,7 @@ def main():
     photonEMulti   = getattr(ev,'E_multi')
     photonEtaMulti = getattr(ev,'Eta_multi')
     photonPhiMulti = getattr(ev,'Phi_multi')
+    photonZMulti = getattr(ev,'Z_multi')
     #jet quantities
     jetTree.GetEntry(i)
     nJets       = getattr(jetTree,'JetPUPPI_size')
@@ -120,12 +150,35 @@ def main():
       jetVals[jetVar] = getattr(jetTree,jetVar)
 
     #processing (use default quantities for barrel, multi ones for endcap)
-    leadIndex       = int(photonPt[1] > photonPt[0])
+    #leadIndex       = int(photonPt[1] > photonPt[0])
+    #leadGenIndex    = photonGenIndex[leadIndex]
+    #subleadIndex    = 1 - leadIndex
+    #subleadGenIndex = photonGenIndex[subleadIndex]
+    leadIndex    = -1
+    leadPt       = -1.
+    subleadIndex = -1.
+    subleadPt    = -1.
+    for iPho in range(nPhotons):
+      tempPt = photonPt[iPho]
+      if abs(photonEta[iPho]) > 1.5 and abs(photonEta[iPho]) < 1.5:
+        tempPt = photonPtMulti[iPho]
+      if tempPt > leadPt:
+        leadPt = tempPt
+        leadIndex = iPho
+    for iPho2 in range(nPhotons):
+      if iPho2 == leadIndex:
+        continue
+      tempPt = photonPt[iPho2]
+      if tempPt > subleadPt:
+        subleadPt = tempPt
+        subleadIndex = iPho
+    if leadIndex < 0 or subleadIndex < 0:
+      continue
     leadGenIndex    = photonGenIndex[leadIndex]
-    subleadIndex    = 1 - leadIndex
     subleadGenIndex = photonGenIndex[subleadIndex]
     if leadGenIndex < 0 or subleadGenIndex < 0:
       continue
+    miscHists['cutFlow2_TwoMatchingPhotons'].Fill(1)
     leadPhoton = r.TLorentzVector()
     if photonIsEB[leadIndex]:
       leadPhoton.SetPtEtaPhiM(photonPt[leadIndex], photonEta[leadIndex], photonPhi[leadIndex], 0)
@@ -136,10 +189,30 @@ def main():
       subleadPhoton.SetPtEtaPhiM(photonPt[subleadIndex], photonEta[subleadIndex], photonPhi[subleadIndex], 0)
     else:
       subleadPhoton.SetPtEtaPhiM(photonPtMulti[subleadIndex], photonEtaMulti[subleadIndex], photonPhiMulti[subleadIndex], 0)
+    theDiphoton = leadPhoton + subleadPhoton
 
     #FIXME recalculate four-vectors if reco vertex further than 1cm from gen vertex (skipping for now)
     if not correctVtx: 
-      continue
+      #print 'Original lead photon:    ',leadPhoton.Print()
+      #print 'Original sublead photon: ',subleadPhoton.Print()
+      #print 'Original diphoton mass:  ',theDiphoton.M()
+      leadZ = photonZMulti[leadIndex]
+      leadX = leadZ * tan(leadPhoton.Theta()) * cos(leadPhoton.Phi())
+      leadY = leadZ * tan(leadPhoton.Theta()) * sin(leadPhoton.Phi())
+      leadDirection = r.Math.XYZVector(leadX, leadY, leadZ - genVtxZ)
+      leadFourVector = r.Math.XYZVector.Unit(leadDirection) * leadPhoton.E()
+      leadPhoton.SetPxPyPzE(leadFourVector.X(), leadFourVector.Y(), leadFourVector.Z(), leadPhoton.E())
+      subleadZ = photonZMulti[subleadIndex]
+      subleadX = subleadZ * tan(subleadPhoton.Theta()) * cos(subleadPhoton.Phi())
+      subleadY = subleadZ * tan(subleadPhoton.Theta()) * sin(subleadPhoton.Phi())
+      subleadDirection = r.Math.XYZVector(subleadX, subleadY, subleadZ - genVtxZ)
+      subleadFourVector = r.Math.XYZVector.Unit(subleadDirection) * subleadPhoton.E()
+      subleadPhoton.SetPxPyPzE(subleadFourVector.X(), subleadFourVector.Y(), subleadFourVector.Z(), subleadPhoton.E())
+      theDiphoton = leadPhoton + subleadPhoton
+      #print 'New lead photon:    ',leadPhoton.Print()
+      #print 'New sublead photon: ',subleadPhoton.Print()
+      #print 'New diphoton mass:  ',theDiphoton.M()
+      #print '\n\n'
 
     #2D energy correction hist stuff can come first
     leadPhotonCorrection    = genPhotonE[leadGenIndex] / leadPhoton.E()
@@ -151,11 +224,12 @@ def main():
     correctionHists['photonECorrectionEntries'].Fill(abs(subleadPhoton.Eta()), subleadPhoton.E())
 
     #then diphoton mass plots
-    theDiphoton = leadPhoton + subleadPhoton
     diphoMass = theDiphoton.M()
     fillHistByEta(etaHists, 'mggTightID', leadPhoton.Eta(), subleadPhoton.Eta(), diphoMass)
-    if 3*leadPhoton.Pt()>diphoMass and 4*subleadPhoton.Pt()>diphoMass:
-      fillHistByEta(etaHists, 'mggPtCutsTightID', leadPhoton.Eta(), subleadPhoton.Eta(), diphoMass)
+    if not (3*leadPhoton.Pt()>diphoMass and 4*subleadPhoton.Pt()>diphoMass):
+      continue
+    miscHists['cutFlow3_ScaledPtCuts'].Fill(1)
+    fillHistByEta(etaHists, 'mggPtCutsTightID', leadPhoton.Eta(), subleadPhoton.Eta(), diphoMass)
 
     #find lead and sublead jets
     if nJets < 2:
@@ -167,6 +241,8 @@ def main():
     for iJet in range(nJets):
       if not jetID[iJet]:
         continue
+      if not abs(jetEta[iJet]) < 4.7:
+        continue
       tempPt = jetPt[iJet]
       if tempPt>leadJetPt:
         leadJetPt = jetPt[iJet]
@@ -176,12 +252,18 @@ def main():
         continue
       if not jetID[iJet2]:
         continue
+      if not abs(jetEta[iJet2]) < 4.7:
+        continue
       tempPt = jetPt[iJet2]
       if tempPt>subleadJetPt:
         subleadJetPt = jetPt[iJet2]
         subleadJetIndex = iJet2
     if not (leadJetIndex>-1 and subleadJetIndex>-1):
       continue
+    miscHists['cutFlow4_TwoValidJetsIDd'].Fill(1)
+    if not (leadJetPt>40. and subleadJetPt>30.):
+      continue
+    miscHists['cutFlow5_PtCutJets'].Fill(1)
     leadJet = r.TLorentzVector()
     leadJet.SetPtEtaPhiM(leadJetPt, jetEta[leadJetIndex], jetPhi[leadJetIndex], jetMass[leadJetIndex])
     subleadJet = r.TLorentzVector()
@@ -194,16 +276,11 @@ def main():
     subleadJetGenIndex = jetGenIndex[subleadJetIndex]
     #jetDeta = abs(jetEta[leadJetIndex]l - jetEta[subleadJetIndex]) #FIXME: no dEta cut in flashgg?
     #then project to VBF phase space
-    if not (3*leadPhoton.Pt()>diphoMass and 4*subleadPhoton.Pt()>diphoMass):
-      continue
-    if not (abs(jetEta[leadJetIndex])<4.7 and abs(jetEta[subleadJetIndex])<4.7):
-      continue
     if not (dijetMass > 250.):
       continue
-    if not (jetID[leadJetIndex] and jetID[subleadJetIndex]): #FIXME need to investigate jetID
-      continue
+    miscHists['cutFlow6_DijetMassCut'].Fill(1)
     #make jet, other plots here
-    vtxHists['choseCorrectVtxVBFPhaseSpace'].Fill(correctVtx)
+    miscHists['choseCorrectVtxVBFPhaseSpace'].Fill(correctVtx)
     fillHistByEta(etaHists, 'mggVBFPhaseSpace', leadPhoton.Eta(), subleadPhoton.Eta(), diphoMass)
     fillHistByJetType(jetHists, 'jetPt', leadJetGenIndex, leadJetGenPID, 0, leadJet.Pt())
     fillHistByJetType(jetHists, 'jetPt', subleadJetGenIndex, subleadJetGenPID, 1, subleadJet.Pt())
@@ -224,32 +301,42 @@ def main():
         fillHistByJetType(jetHists, jetVar+'_limited', subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
 
   #post-processing
+  print 'Processed last event'
   correctionHists['photonECorrection'].Divide(correctionHists['photonECorrectionEntries'])
   correctionHists['photonECorrection'].SetMinimum(0.)
   correctionHists['photonECorrection'].SetMaximum(3.)
 
   #draw hists, send to web
-  canv = r.TCanvas('canv','canv')
-  outdirName = 'DiphoPlots_%s/'%theKey
-  os.system('mkdir -p %s'%outdirName)
-  webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1/%s'%theKey
-  os.system('mkdir -p %s'%webDir)
-  os.system('cp /afs/cern.ch/user/e/escott/www/HFuture/Pass1/index.php %s'%webDir)
-  printHists(canv, etaHists, outdirName)
-  printHists(canv, correctionHists, outdirName)
-  printHists(canv, vtxHists, outdirName)
-  printHists(canv, jetHists, outdirName)
-  drawJetHist(canv, jetHists, 'jetPt', outdirName)
-  drawJetHist(canv, jetHists, 'jetEta', outdirName)
-  for jetVar in jetVariables:
-    drawJetHist(canv, jetHists, jetVar, outdirName)
-    drawJetHist(canv, jetHists, jetVar+'_limited', outdirName)
-  os.system('cp %s* %s'%(outdirName,webDir))
-  print 'plots moved to %s'%webDir
-  #save the correction hist for combination
-  outFile = r.TFile('CorrectionHists/corrHist_%s.root'%theKey,'RECREATE')
-  correctionHists['photonECorrection'].Write()
-  outFile.Close()
+  if opts.writePlots:
+    canv = r.TCanvas('canv','canv')
+    outdirName = 'DiphoPlots_%s/'%theKey
+    if doLoose:
+      outdirName = 'DiphoPlots_Loose_%s/'%theKey
+    os.system('mkdir -p %s'%outdirName)
+    webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1/%s'%theKey
+    if doLoose:
+      webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1/Loose/%s'%theKey
+    os.system('mkdir -p %s'%webDir)
+    os.system('cp /afs/cern.ch/user/e/escott/www/HFuture/Pass1/index.php %s'%webDir)
+    printHists(canv, etaHists, outdirName)
+    printHists(canv, correctionHists, outdirName)
+    printHists(canv, miscHists, outdirName)
+    printHists(canv, jetHists, outdirName)
+    drawJetHist(canv, jetHists, 'jetPt', outdirName)
+    drawJetHist(canv, jetHists, 'jetEta', outdirName)
+    for jetVar in jetVariables:
+      drawJetHist(canv, jetHists, jetVar, outdirName)
+      drawJetHist(canv, jetHists, jetVar+'_limited', outdirName)
+    os.system('cp %s* %s'%(outdirName,webDir))
+    print 'plots moved to %s'%webDir
+    #save the correction hists for combination
+    if not doLoose:
+      outFile = r.TFile('CorrectionHists/corrHist_%s.root'%theKey,'RECREATE')
+    else:
+      outFile = r.TFile('CorrectionHistsLoose/corrHist_%s.root'%theKey,'RECREATE')
+    correctionHists['photonECorrection'].Write()
+    correctionHists['photonECorrectionEntries'].Write()
+    outFile.Close()
 
 
 if __name__ == '__main__':
