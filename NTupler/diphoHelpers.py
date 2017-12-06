@@ -69,22 +69,25 @@ def drawJetHist(canv, histColl, jetVar, outdir):
     canv.Print(outdir+jetVar+order+'_comb.pdf')
     canv.Print(outdir+jetVar+order+'_comb.png')
 
-def printHists(canv, hists, outdir):
+def printHists(canv, hists, outdir, option='hist'):
   for key,hist in hists.iteritems():
     canv.cd() 
     setXTitle(key,hist)
     if isinstance(hist,r.TH2):
       hist.Draw('colz,text')
     elif isinstance(hist,r.TH1):
-      hist.Draw('hist')
+      hist.SetMarkerStyle(r.kFullCircle)
+      hist.SetMarkerColor(r.kBlack)
+      hist.Draw(option)
     canv.Print(outdir+hist.GetName()+'.pdf')
     canv.Print(outdir+hist.GetName()+'.png')
 
-def getEffSigma(theHist, wmin=120., wmax=130., step=0.001, epsilon=0.005):
+def getEffSigma(theHist, wmin=115., wmax=135., step=0.001, epsilon=0.005):
   point = wmin
   weight = 0.
   points = [] #vector<pair<double,double> > 
   thesum = theHist.Integral()
+  if thesum <= 0: return 0.
   for i in range(theHist.GetNbinsX()):
     weight += theHist.GetBinContent(i)
     if weight > epsilon:

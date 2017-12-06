@@ -13,7 +13,9 @@ def main():
   combinedECorrection        = r.TH2F('combinedECorrection',       'combinedECorrection',        6, 0., 3., 25, 30., 530.)
   combinedECorrectionEntries = r.TH2F('combinedECorrectionEntries','combinedECorrectionEntries', 6, 0., 3., 25, 30., 530.)
 
-  theKeys = ['ggH_PU0', 'ggH_PU200', 'VBF_PU0', 'VBF_PU200']
+  #theKeys = ['ggH_PU0', 'ggH_PU200', 'VBF_PU0', 'VBF_PU200']
+  theKeys = ['ggH_PU0', 'VBF_PU0']
+  #theKeys = ['ggH_PU200', 'VBF_PU200']
 
   entriesMap = {}
   histMap    = {}

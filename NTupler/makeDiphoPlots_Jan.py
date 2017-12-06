@@ -12,6 +12,7 @@ parser.add_option('-k', '--key', default='VBF_PU200', help='choose the sample to
 parser.add_option('-d', '--doLoose', default=False, action='store_true', help='use loose photons (default false, ie use only tight photons)')
 parser.add_option('-w', '--writePlots', default=False, action='store_true', help='send plots to web etc')
 parser.add_option('-c', '--applyCorrections', default=True, action='store_false', help='apply photon corrections (default true)')
+parser.add_option('--noGenMatching', default=False, action='store_true', help='do not match photons to gen level objects')
 parser.add_option('-m', '--maxEvents', type='int', default=-1, help='specify number of events on which to run')
 parser.add_option('-l', '--lumi', type='float', default=35.9, help='specify luminosity (in /fb)')
 (opts,args) = parser.parse_args()
@@ -21,9 +22,9 @@ r.gROOT.SetBatch(True)
 def main():
   #setup histos with several eta breakdown scenarios
   etaHists = {}
-  initHistByEta(etaHists, 'mggTightID', 40, 115, 135)
-  initHistByEta(etaHists, 'mggPtCutsTightID', 40, 115, 135)
-  initHistByEta(etaHists, 'mggVBFPhaseSpace', 40, 115, 135)
+  initHistByEta(etaHists, 'mggTightID', 80, 115, 135)
+  initHistByEta(etaHists, 'mggPtCutsTightID', 80, 115, 135)
+  initHistByEta(etaHists, 'mggVBFPhaseSpace', 80, 115, 135)
   #misc histos
   miscHists = {}
   miscHists['choseCorrectVtx'] = r.TH1F('choseCorrectVtx', 'choseCorrectVtx', 2, -0.5, 1.5)
@@ -46,7 +47,7 @@ def main():
   initHistByJetType(jetHists, 'jetEta')
   for jetVar in jetVariables:
     initHistByJetType(jetHists, jetVar)
-    initHistByJetType(jetHists, jetVar+'_limited')
+    #initHistByJetType(jetHists, jetVar+'_limited')
   #the 2D energy correction hist. FIXME: Binning could be changed, ideally variable
   correctionHists = {}
   correctionHists['photonECorrection'] = r.TH2F('photonECorrection','photonECorrection',6,0.,3.,25,30.,530.)
@@ -118,10 +119,6 @@ def main():
     genVtxTree.Add(fileName)
     recoVtxTree.Add(fileName)
     jetTree.Add(fileName)
-
-  #flatTree = r.TTree('flatTree_%s'%theKey,'flatTree_%s'%theKey)
-  #leadPtOvMgg = -9999.
-  #flatTree.Branch('leadPtOvMgg',leadPtOvMgg,'leadPtOvMgg/D')
 
   print 'got trees from files'
   nEvents = theTree.GetEntries()
@@ -202,6 +199,7 @@ def main():
     subleadPt    = -1.
     for iPho in range(nPhotons):
       tempPt = photonPt[iPho]
+      #if abs(photonEta[iPho]) > 2.5:
       if abs(photonEta[iPho]) > 3.:
         continue
       elif abs(photonEta[iPho]) > 1.5:
@@ -213,6 +211,7 @@ def main():
       if iPho2 == leadIndex:
         continue
       tempPt = photonPt[iPho2]
+      #if abs(photonEta[iPho2]) > 2.5:
       if abs(photonEta[iPho2]) > 3.:
         continue
       elif abs(photonEta[iPho2]) > 1.5:
@@ -224,8 +223,9 @@ def main():
       continue
     leadGenIndex    = photonGenIndex[leadIndex]
     subleadGenIndex = photonGenIndex[subleadIndex]
-    if leadGenIndex < 0 or subleadGenIndex < 0:
-      continue
+    if not opts.noGenMatching:
+      if leadGenIndex < 0 or subleadGenIndex < 0: #FIXME might want to remove this
+        continue
     if leadPt < 30. or subleadPt < 30.:
       continue
     miscHists['cutFlow2_TwoMatchingPhotons'].Fill(1,evtWeight)
@@ -239,7 +239,6 @@ def main():
       subleadPhoton.SetPtEtaPhiM(photonPt[subleadIndex], photonEta[subleadIndex], photonPhi[subleadIndex], 0)
     else:
       subleadPhoton.SetPtEtaPhiM(photonPtMulti[subleadIndex], photonEtaMulti[subleadIndex], photonPhiMulti[subleadIndex], 0)
-    theDiphoton = leadPhoton + subleadPhoton
 
     #recalculate four-vectors if reco vertex further than 1cm from gen vertex
     if not correctVtx: 
@@ -258,23 +257,20 @@ def main():
       subleadDirection = r.Math.XYZVector(subleadX, subleadY, subleadZ - genVtxZ)
       subleadFourVector = r.Math.XYZVector.Unit(subleadDirection) * subleadPhoton.E()
       subleadPhoton.SetPxPyPzE(subleadFourVector.X(), subleadFourVector.Y(), subleadFourVector.Z(), subleadPhoton.E())
-      theDiphoton = leadPhoton + subleadPhoton
-      #print 'New lead photon:    ',leadPhoton.Print()
-      #print 'New sublead photon: ',subleadPhoton.Print()
-      #print 'New diphoton mass:  ',theDiphoton.M()
-      #print '\n\n'
 
     #2D energy correction hist stuff can come first
-    leadPhotonCorrection    = genPhotonE[leadGenIndex] / leadPhoton.E()
-    subleadPhotonCorrection = genPhotonE[subleadGenIndex] / subleadPhoton.E()
-    #print 'lead, sublead correction factors = %1.3f, %1.3f'%(leadPhotonCorrection,subleadPhotonCorrection)
-    correctionHists['photonECorrection'].Fill(abs(leadPhoton.Eta()),    leadPhoton.E(),    leadPhotonCorrection)
-    correctionHists['photonECorrection'].Fill(abs(subleadPhoton.Eta()), subleadPhoton.E(), subleadPhotonCorrection)
-    correctionHists['photonECorrectionEntries'].Fill(abs(leadPhoton.Eta()),    leadPhoton.E())
-    correctionHists['photonECorrectionEntries'].Fill(abs(subleadPhoton.Eta()), subleadPhoton.E())
+    if not opts.noGenMatching:
+      leadPhotonCorrection    = genPhotonE[leadGenIndex] / leadPhoton.E()
+      subleadPhotonCorrection = genPhotonE[subleadGenIndex] / subleadPhoton.E()
+      #print 'lead, sublead correction factors = %1.3f, %1.3f'%(leadPhotonCorrection,subleadPhotonCorrection)
+      correctionHists['photonECorrection'].Fill(abs(leadPhoton.Eta()),    leadPhoton.E(),    leadPhotonCorrection)
+      correctionHists['photonECorrection'].Fill(abs(subleadPhoton.Eta()), subleadPhoton.E(), subleadPhotonCorrection)
+      correctionHists['photonECorrectionEntries'].Fill(abs(leadPhoton.Eta()),    leadPhoton.E())
+      correctionHists['photonECorrectionEntries'].Fill(abs(subleadPhoton.Eta()), subleadPhoton.E())
 
     #then diphoton mass plots
-    diphoMass = theDiphoton.M()
+    leadCorrValue = 1.
+    subleadCorrValue = 1.
     if opts.applyCorrections:
       corrBinsX, corrBinsY = corrHist.GetNbinsX(), corrHist.GetNbinsY()
       corrXlow, corrXhigh = corrHist.GetXaxis().GetXmin(), corrHist.GetXaxis().GetXmax()
@@ -285,15 +281,16 @@ def main():
       subleadCorrBinX = int( (abs(subleadPhoton.Eta()) - corrXlow) * corrBinsX / (corrXhigh - corrXlow) ) + 1
       subleadCorrBinY = int( (subleadPhoton.E() - corrYlow) * corrBinsY / (corrYhigh - corrYlow) ) + 1
       subleadCorrValue = corrHist.GetBinContent( subleadCorrBinX, subleadCorrBinY )
-      #print 'eta, E, binX, binY, corr: %1.3f, %1.3f, %g, %g, %1.3f'%(leadPhoton.Eta(),leadPhoton.E(),leadCorrBinX,leadCorrBinY,leadCorrValue)
-      #print 'eta, E, binX, binY, corr: %1.3f, %1.3f, %g, %g, %1.3f\n'%(subleadPhoton.Eta(),subleadPhoton.E(),subleadCorrBinX,subleadCorrBinY,subleadCorrValue)
-      diphoMass *= sqrt( leadCorrValue * subleadCorrValue )
-      if leadCorrValue > 0.:
+      if leadCorrValue > 0. and not opts.noGenMatching:
         correctionHists['photonECorrectionClosure'].Fill(abs(leadPhoton.Eta()),       leadPhoton.E(),       genPhotonE[leadGenIndex]    / (leadPhoton.E() *    leadCorrValue))
         correctionHists['photonECorrectionClosureEntries'].Fill(abs(leadPhoton.Eta()),       leadPhoton.E())
-      if subleadCorrValue > 0.:
+      if subleadCorrValue > 0. and not opts.noGenMatching:
         correctionHists['photonECorrectionClosure'].Fill(abs(subleadPhoton.Eta()),    subleadPhoton.E(),    genPhotonE[subleadGenIndex] / (subleadPhoton.E() * subleadCorrValue))
         correctionHists['photonECorrectionClosureEntries'].Fill(abs(subleadPhoton.Eta()),    subleadPhoton.E())
+      #leadPhoton.SetE( leadPhoton.E() * leadCorrValue )
+      #subleadPhoton.SetE( subleadPhoton.E() * subleadCorrValue )
+    theDiphoton = leadPhoton + subleadPhoton
+    diphoMass = theDiphoton.M() * sqrt(leadCorrValue * subleadCorrValue)
     if diphoMass < 100. or diphoMass > 180.:
       continue
     miscHists['cutFlow2a_Mgg100to180'].Fill(1,evtWeight)
@@ -312,8 +309,8 @@ def main():
     subleadJetPt    = -1.
     for iJet in range(nJets):
       #if not jetID[iJet]:
-      if not jetID[iJet] > 2:
-        continue
+      #if not jetID[iJet] > 2:
+      #  continue
       if not abs(jetEta[iJet]) < 4.7:
         continue
       photonMatch = False
@@ -331,8 +328,8 @@ def main():
       if iJet2 == leadJetIndex:
         continue
       #if not jetID[iJet2]:
-      if not jetID[iJet2] > 2:
-        continue
+      #if not jetID[iJet2] > 2:
+      #  continue
       if not abs(jetEta[iJet2]) < 4.7:
         continue
       photonMatch = False
@@ -383,10 +380,10 @@ def main():
       else:
         fillHistByJetType(jetHists, jetVar, leadJetGenIndex,    leadJetGenPID,    0, jetVals[jetVar][leadJetIndex])
         fillHistByJetType(jetHists, jetVar, subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
-      if leadJetPt>50. and leadJetPt<100.:
-        fillHistByJetType(jetHists, jetVar+'_limited', leadJetGenIndex,    leadJetGenPID,    0, jetVals[jetVar][leadJetIndex])
-      if subleadJetPt>50. and subleadJetPt<100.:
-        fillHistByJetType(jetHists, jetVar+'_limited', subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
+      #if leadJetPt>50. and leadJetPt<100.:
+      #  fillHistByJetType(jetHists, jetVar+'_limited', leadJetGenIndex,    leadJetGenPID,    0, jetVals[jetVar][leadJetIndex])
+      #if subleadJetPt>50. and subleadJetPt<100.:
+      #  fillHistByJetType(jetHists, jetVar+'_limited', subleadJetGenIndex, subleadJetGenPID, 1, jetVals[jetVar][subleadJetIndex])
     if diphoMass < 123 or diphoMass > 127: 
       continue
     miscHists['cutFlow7_EffSigmaWindow'].Fill(1,evtWeight)
@@ -407,9 +404,9 @@ def main():
     if doLoose:
       outdirName = 'DiphoPlots_Loose_%s/'%theKey
     os.system('mkdir -p %s'%outdirName)
-    webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1d/%s'%theKey
+    webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1_noJetID/%s'%theKey
     if doLoose:
-      webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1d/Loose/%s'%theKey
+      webDir = '/afs/cern.ch/user/e/escott/www/HFuture/Pass1_noJetID/Loose/%s'%theKey
     os.system('mkdir -p %s'%webDir)
     os.system('cp /afs/cern.ch/user/e/escott/www/HFuture/Pass1/index.php %s'%webDir)
     printHists(canv, etaHists, outdirName)
@@ -428,22 +425,35 @@ def main():
     for cfName,cfHist in miscHists.iteritems():
       if not 'cutFlow' in cfName:
         continue
-      yieldFile.write('nEvents at %s is %1.3f \n'%(cfName,cfHist.Integral()))
+      theLine = 'nEvents at %s is %1.3f \n'%(cfName,cfHist.Integral())
+      yieldFile.write(theLine)
+      print theLine
+    yieldFile.write('\n\n')
+    for mggKey,mggHist in etaHists.iteritems():
+      theLine = 'effSigma of %s is: %1.3f \n'%(mggKey,getEffSigma(mggHist))
+      yieldFile.write(theLine)
+      print theLine
     yieldFile.close()
     #save the correction hists for combination
     os.system('mkdir -p CorrectionHists/')
-    if not opts.applyCorrections:
-      if not doLoose:
-        outFile = r.TFile('CorrectionHists/corrHist_%s.root'%theKey,'RECREATE')
-      else:
-        outFile = r.TFile('CorrectionHistsLoose/corrHist_%s.root'%theKey,'RECREATE')
-      correctionHists['photonECorrection'].Write()
-      correctionHists['photonECorrectionEntries'].Write()
-      correctionHists['photonECorrectionClosure'].Write()
-      correctionHists['photonECorrectionClosureEntries'].Write()
-      outFile.Close()
+    if not doLoose:
+      outFile = r.TFile('CorrectionHists/corrHist_%s.root'%theKey,'RECREATE')
     else:
+      outFile = r.TFile('CorrectionHistsLoose/corrHist_%s.root'%theKey,'RECREATE')
+    correctionHists['photonECorrection'].Write()
+    correctionHists['photonECorrectionEntries'].Write()
+    outFile.Close()
+    if opts.applyCorrections:
       corrFile.Close()
+
+  for mggKey,mggHist in etaHists.iteritems():
+    theLine = 'effSigma of %s is: %1.3f \n'%(mggKey,getEffSigma(mggHist))
+    print theLine
+  for cfName,cfHist in miscHists.iteritems():
+    if not 'cutFlow' in cfName:
+      continue
+    theLine = 'nEvents at %s is %1.3f \n'%(cfName,cfHist.Integral())
+    print theLine
 
 
 if __name__ == '__main__':

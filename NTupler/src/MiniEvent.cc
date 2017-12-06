@@ -130,6 +130,7 @@ void createMiniEventTree(TTree *t_event_, TTree *t_genParts_, TTree *t_genVertic
   t_loosePhotons_->Branch("PhotonLoose_size", &ev.nlp,     "PhotonLoose_size/I");
   t_loosePhotons_->Branch("IsEB",         ev.lp_isEB,      "IsEB[PhotonLoose_size]/I");
   t_loosePhotons_->Branch("Particle",     ev.lp_g,         "Particle[PhotonLoose_size]/I");
+  t_loosePhotons_->Branch("MvaValue",     ev.lp_mva,       "MvaValue[PhotonLoose_size]/F");
   t_loosePhotons_->Branch("PT",           ev.lp_pt,        "PT[PhotonLoose_size]/F");
   t_loosePhotons_->Branch("Eta",          ev.lp_eta,       "Eta[PhotonLoose_size]/F");
   t_loosePhotons_->Branch("Phi",          ev.lp_phi,       "Phi[PhotonLoose_size]/F");
@@ -143,6 +144,7 @@ void createMiniEventTree(TTree *t_event_, TTree *t_genParts_, TTree *t_genVertic
   t_tightPhotons_->Branch("PhotonTight_size", &ev.ntp,     "PhotonTight_size/I");
   t_tightPhotons_->Branch("IsEB",         ev.tp_isEB,      "IsEB[PhotonTight_size]/I");
   t_tightPhotons_->Branch("Particle",     ev.tp_g,         "Particle[PhotonTight_size]/I");
+  t_tightPhotons_->Branch("MvaValue",     ev.tp_mva,       "MvaValue[PhotonTight_size]/F");
   t_tightPhotons_->Branch("PT",           ev.tp_pt,        "PT[PhotonTight_size]/F");
   t_tightPhotons_->Branch("Eta",          ev.tp_eta,       "Eta[PhotonTight_size]/F");
   t_tightPhotons_->Branch("Phi",          ev.tp_phi,       "Phi[PhotonTight_size]/F");

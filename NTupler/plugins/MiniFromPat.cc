@@ -731,6 +731,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (!isLoose) continue;
 
     ev_.lp_isEB[ev_.nlp]   = isEB ? 1 : 0;
+    ev_.lp_mva[ev_.nlp]    = mvaValue;
     ev_.lp_pt[ev_.nlp]     = photons->at(i).pt();
     ev_.lp_phi[ev_.nlp]    = photons->at(i).phi();
     ev_.lp_eta[ev_.nlp]    = photons->at(i).eta();
@@ -761,6 +762,7 @@ MiniFromPat::recoAnalysis(const edm::Event& iEvent, const edm::EventSetup& iSetu
     if (!isTight) continue;
 
     ev_.tp_isEB[ev_.ntp]   = isEB ? 1 : 0;
+    ev_.tp_mva[ev_.ntp]    = mvaValue;
     ev_.tp_pt[ev_.ntp]     = photons->at(i).pt();
     ev_.tp_phi[ev_.ntp]    = photons->at(i).phi();
     ev_.tp_eta[ev_.ntp]    = photons->at(i).eta();
