@@ -59,10 +59,6 @@ def main():
   correctionHists['photonECorrectionClosure'].Sumw2()
   correctionHists['photonECorrectionClosureEntries'].Sumw2()
 
-  if opts.applyCorrections:
-    corrFile = r.TFile('combinedCorrectionHist.root','READ')
-    corrHist = corrFile.Get('combinedECorrection')
-
   #file lists, cross-sections etc
   nFiles = {}
   nFiles['VBF_PU0']   = 5
@@ -130,6 +126,15 @@ def main():
   evtWeight = nExpEvents / float(nEvents)
   print 'expecting %1.0f events'%nExpEvents
   print 'applying event weight of %1.3f to cutflow hists'%evtWeight
+
+  if opts.applyCorrections:
+    if 'PU0' in theKey:
+      corrFile = r.TFile('combinedCorrectionHist_PU0.root','READ')
+    elif 'PU200' in theKey:
+      corrFile = r.TFile('combinedCorrectionHist_PU200.root','READ')
+    corrHist = corrFile.Get('combinedECorrection')
+
+  #main loop starts here
   for i,ev in enumerate(theTree):
     if i==0: print 'Processing first event'
     elif i%10000==0: print 'Processing event %g'%i
